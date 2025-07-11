@@ -30,7 +30,7 @@ jobs:
           ldd bin/snake
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: snake-game-linux
           path: bin/snake
@@ -79,11 +79,8 @@ jobs:
           tar -czf snake-game-linux.tar.gz -C release .
 
       - name: Upload release assets
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./snake-game-linux.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./snake-game-linux.tar.gz
-          asset_name: snake-game-linux.tar.gz
-          asset_content_type: application/gzip
