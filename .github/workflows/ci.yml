@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  release:
+    types: [published]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses5-dev libncurses5 build-essential
+
+      - name: Build
+        run: make
+
+      - name: Test build artifacts
+        run: |
+          test -f bin/snake
+          file bin/snake
+          ldd bin/snake
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: snake-game-linux
+          path: bin/snake
+
+  nix-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Build with Nix
+        run: nix-build
+
+      - name: Test Nix build
+        run: |
+          test -f result/bin/snake
+          file result/bin/snake
+
+  release:
+    needs: [test, nix-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses5-dev libncurses5 build-essential
+
+      - name: Build release
+        run: make
+
+      - name: Create release archive
+        run: |
+          mkdir -p release
+          cp bin/snake release/
+          cp README.md release/
+          cp LICENSE release/ || echo "LICENSE file not found"
+          tar -czf snake-game-linux.tar.gz -C release .
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./snake-game-linux.tar.gz
+          asset_name: snake-game-linux.tar.gz
+          asset_content_type: application/gzip
