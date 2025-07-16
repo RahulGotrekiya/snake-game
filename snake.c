@@ -35,6 +35,7 @@ Snake snake;
 Food food;
 int score = 0;
 bool game_over = false;
+bool quit_game = false;  // Add this flag for proper quitting
 
 // Color pairs
 #define COLOR_SNAKE 1
@@ -74,6 +75,7 @@ void init_game() {
     
     score = 0;
     game_over = false;
+    quit_game = false;  // Reset quit flag when initializing
 }
 
 void spawn_food() {
@@ -237,7 +239,7 @@ void handle_input() {
             break;
         case 'q':
         case 'Q':
-            game_over = true;
+            quit_game = true;  // Set quit flag instead of just game_over
             break;
         case 'r':
         case 'R':
@@ -269,8 +271,12 @@ void render() {
 int main() {
     init_game();
     
-    while (true) {
+    while (!quit_game) {  // Changed condition to check quit_game flag
         handle_input();
+        
+        if (quit_game) {  // Break immediately if quit is requested
+            break;
+        }
         
         if (game_over) {
             render();
